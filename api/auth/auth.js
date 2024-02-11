@@ -5,76 +5,86 @@ const jwt = require('jsonwebtoken');
 
 var router = express.Router();
 
-
-
 router.get('/', (req, res) => {
     res.status(200).send({
         message: 'Auth API is working!'
     });
 });
 
-router.post('/register', (req, res) => {
+/** *
+ * This is a register function in googlebook backend
+* @route /api/auth/register
+* @param email, password
+* @return send the message to frontend
+*/
+router.post('/register', async (req, res) => {
     const { email, password } = req.body;
 
-    UserModel.findOne( {where: {email: email} })
-        .then(existUser => {
-            if(existUser) {
-                return res.status(400).send('Email already exists');
-            } else {
-                bcrypt.hash(password, 10, (err, hash) => {
-                    if(err) {
-                        console.log('Password hashing failed:', err);
-                        res.status(500).send({
-                            message: 'Password hashing is failed'
-                        });
-                    } else {
-                        // Create User
-                        UserModel.create({
-                          email: email,
-                          password: hash
-                        }).then(user => {
-                          console.log('User registered', user);
-                          res.status(201).send('User registered');
-                        }).catch(err => {
-                          console.error('Registration failed:', err);
-                          res.status(400).send('Registration failed');
-                        });
-                    }
-                });
-            }
-        }).catch(err => {
-            console.error('Error checking email:', err);
-            res.status(500).send('Error checking email');
+    try {
+        // Check the multiple user by email
+        const existUser = await UserModel.findOne( {where: {email: email} });
+        if(existUser) {
+            return res.status(400).send({
+                message: 'Email already exists'
+            });
+        }
+        
+        // If user is not multiple, create user account
+        const hash = await bcrypt.hash(password, 10); // encrypt the password with hash
+        // Create User
+        await UserModel.create({
+            email: email,
+            password: hash
+        })        
+        console.log(`${email} registered`);
+        res.status(201).send({
+            message: 'User registered'
         });
+    } catch {
+        // If error was occurred, send the error message
+        console.error('Register Error:', err);
+        res.status(500).send({
+            message: 'Error in Register'
+        });
+    }
 });
 
-router.post('/login', (req, res) => {
+/** *
+ * This is a login function in googlebook backend
+* @route /api/auth/register
+* @param email, password
+* @return send the message to frontend
+*/
+router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
-    // Find user by email
-    UserModel.findOne({ where: { email: email } })
-        .then(user => {
-        if (!user) {
-            return res.status(404).send('User not found');
+    try {
+        // Find user by email address
+        const user = await UserModel.findOne({ where: { email: email } });
+        if(!user) {
+            return res.status(404).send({
+                message: 'User not found'
+            });
         }
-        // Compare passwords
-        bcrypt.compare(password, user.password, (err, match) => {
-            if (err) {
-                console.error('Password comparison failed:', err);
-                return res.status(500).send('Password comparison failed');
-            }
-            if (match) {
-                // Generate JWT token
-                const token = jwt.sign({ email: user.email }, 'joseph');
-                res.json({ token: 'Bearer ' + token });
-            } else {
-                res.status(401).send('Incorrect password');
-            }
+
+        // If valid email, check the password
+        const match = await bcrypt.compare(password, user.password);
+        if(!match) {
+            return res.status(401).send({
+                message: 'Incorrect password'
+            });
+        }
+
+        // If valid email and password, send JWT token
+        const token = jwt.sign({ email: user.email }, 'joseph');
+        res.json({
+            token: 'Bearer ' + token
         });
-        }).catch(err => {
-            console.error('Login failed:', err);
-            res.status(500).send('Login failed: ' + err);
-        });
+    } catch(error) {
+        // If error was occurred, send the error message
+        console.error('Login failed', error);
+        res.status(500).send('Login failed!');
+    }
 })
 
 module.exports = router;
