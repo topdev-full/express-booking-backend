@@ -1,6 +1,7 @@
 const express = require('express');
 const UserModel = require('../../model/users');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 var router = express.Router();
 
@@ -46,5 +47,34 @@ router.post('/register', (req, res) => {
             res.status(500).send('Error checking email');
         });
 });
+
+router.post('/login', (req, res) => {
+    const { email, password } = req.body;
+
+    // Find user by email
+    UserModel.findOne({ where: { email: email } })
+        .then(user => {
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+        // Compare passwords
+        bcrypt.compare(password, user.password, (err, match) => {
+            if (err) {
+                console.error('Password comparison failed:', err);
+                return res.status(500).send('Password comparison failed');
+            }
+            if (match) {
+                // Generate JWT token
+                const token = jwt.sign({ email: user.email }, 'joseph');
+                res.json({ token: 'Bearer ' + token });
+            } else {
+                res.status(401).send('Incorrect password');
+            }
+        });
+        }).catch(err => {
+            console.error('Login failed:', err);
+            res.status(500).send('Login failed: ' + err);
+        });
+})
 
 module.exports = router;
