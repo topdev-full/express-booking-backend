@@ -9,11 +9,11 @@ const verifyToken = require('../auth/auth');
 
 const router = express.Router();
 
+// Redis database configuration
 const client = redis.createClient({
     port: 6379,
     host: 'localhost',
 });
-
 client.on('error', (err) => {
     console.log('Redis client error:', err);
 });
@@ -21,11 +21,10 @@ client.on('connect', () => {
     console.log('Redis client connected');        
 });
 
-
-// // Promisify the exists, get, and set methods
-// const existsAsync = promisify(client.exists).bind(client);
-// const getAsync = promisify(client.get).bind(client);
-// const setAsync = promisify(client.set).bind(client);
+// Promisify the exists, get, and set methods
+const existsAsync = promisify(client.exists).bind(client);
+const getAsync = promisify(client.get).bind(client);
+const setAsync = promisify(client.set).bind(client);
 
 router.get('/', (req, res) => {
     res.status(200).send({
@@ -35,40 +34,26 @@ router.get('/', (req, res) => {
 
 router.get('/search', async (req, res) => {
     const query = req.query.query;
-    // Redis database configration
-    client.exists(query, async (err, reply) => {
-        if (err) {
-            console.error('Error checking key existence:', err);
-          } else {
-            if (reply === 1) {
-                console.log(`Query '${query}' exists`);
-                client.get(query, (err, value) => {
-                    if(err) {
-                        console.error('Error getting in redis', err);
-                        return res.status(401).send({
-                            message: 'Getting redis Error'
-                        });
-                    }
-                    res.status(200).json(JSON.parse(value));
-                });
-            } else {
-                console.log(`Query '${query}' does not exist`);
-                const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}`);
-                const data = await response.json();
-                client.set(query, JSON.stringify(data), 'EX', 1800, (err, reply) => {
-                if (err) {
-                    console.error('Error setting value:', err);
-                    return res.status(401).send({
-                      message: 'Error setting redis'
-                    });
-                } else {
-                    console.log(`Value '${data}' set for key '${query}'`);
-                    return res.status(200).json(data);
-                }
-              });
-            }
+    try{
+        const reply = await existsAsync(query);
+        if (reply === 1) {
+            console.log(`Query '${query}' exists`);
+            const value = await getAsync(query);
+            res.status(200).json(JSON.parse(value));
+        } else {
+            console.log(`Query '${query}' does not exist`);
+            const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}`);
+            const data = await response.json();
+            await setAsync(query, JSON.stringify(data), 'EX', 1800);
+            console.log(`Value '${data}' set for key '${query}'`);
+            return res.status(200).json(data);
         }
-    });
+    } catch(err) {
+        console.error('Error in redis', err);
+        return res.status(400).send({
+            message: 'Error in redis database'
+        });
+    }
 });
 
 router.get('/list', verifyToken, async (req, res) => {
