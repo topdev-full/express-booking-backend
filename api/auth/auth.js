@@ -1,13 +1,27 @@
 const express = require('express');
-const UserModel = require('../../model/users');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+
+// Import the model
+const UserModel = require('../../model/users');
 
 var router = express.Router();
 
 router.get('/', (req, res) => {
     res.status(200).send({
-        message: 'Auth API is working!'
+        message: 'Auth API is running!'
+    });
+});
+
+/** *
+ * This is a token verify function
+* @route /api/auth/protected
+* @return token verification is true or false
+*/
+router.get('/protected', verifyToken, (req, res) => {
+    res.send({
+        success: true,
+        message: req.user.email + ' are authorized'
     });
 });
 
@@ -15,7 +29,7 @@ router.get('/', (req, res) => {
  * This is a register function in googlebook backend
 * @route /api/auth/register
 * @param email, password
-* @return send the message to frontend
+* @return user signup is success or not
 */
 router.post('/register', async (req, res) => {
     const { email, password } = req.body;
@@ -31,11 +45,12 @@ router.post('/register', async (req, res) => {
         
         // If user is not multiple, create user account
         const hash = await bcrypt.hash(password, 10); // encrypt the password with hash
-        // Create User
-        await UserModel.create({
+        await UserModel.create({ // Create User
             email: email,
             password: hash
-        })        
+        })
+
+        // If registered, send the success message
         console.log(`${email} registered`);
         res.status(201).send({
             message: 'User registered'
@@ -51,9 +66,9 @@ router.post('/register', async (req, res) => {
 
 /** *
  * This is a login function in googlebook backend
-* @route /api/auth/register
+* @route /api/auth/login
 * @param email, password
-* @return send the message to frontend
+* @return signin is success or not
 */
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
@@ -85,6 +100,32 @@ router.post('/login', async (req, res) => {
         console.error('Login failed', error);
         res.status(500).send('Login failed!');
     }
-})
+});
 
-module.exports = router;
+function verifyToken(req, res, next) {
+    const head = req.headers.authorization.slice(0, 6);
+    if (head !== 'Bearer') {
+        return res.status(400).send({
+            success: false,
+            message: 'This is not Bearer token'
+        });
+    }
+    const token = req.headers.authorization.slice(7);
+
+    if(!token) {
+        return res.status(401).send({
+            message: 'Access is denied, token is expired'
+        });
+    }
+    try {
+        const decoded = jwt.verify(token, 'joseph');
+        req.user = decoded;
+        next();
+    } catch (error) {
+        res.status(400).send({
+            message: 'Invalid token'
+        });
+    }
+}
+
+module.exports = [router, verifyToken];
