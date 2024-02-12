@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 
 // Import the model
 const UserModel = require('../../model/users');
+const env = require('../../const/env');
 
 var router = express.Router();
 
@@ -15,7 +16,8 @@ router.get('/', (req, res) => {
 
 /** *
  * This is a token verify function
-* @route /api/auth/protected
+* @route GET /api/auth/protected
+* @param no param
 * @return token verification is true or false
 */
 router.get('/protected', verifyToken, (req, res) => {
@@ -27,7 +29,7 @@ router.get('/protected', verifyToken, (req, res) => {
 
 /** *
  * This is a register function in googlebook backend
-* @route /api/auth/register
+* @route GET /api/auth/register
 * @param email, password
 * @return user signup is success or not
 */
@@ -66,7 +68,7 @@ router.post('/register', async (req, res) => {
 
 /** *
  * This is a login function in googlebook backend
-* @route /api/auth/login
+* @route POST /api/auth/login
 * @param email, password
 * @return signin is success or not
 */
@@ -91,7 +93,7 @@ router.post('/login', async (req, res) => {
         }
 
         // If valid email and password, send JWT token
-        const token = jwt.sign({ email: user.email }, 'joseph');
+        const token = jwt.sign({ email: user.email }, env.TOKEN_KEY);
         res.json({
             token: 'Bearer ' + token
         });
@@ -104,7 +106,7 @@ router.post('/login', async (req, res) => {
 
 function verifyToken(req, res, next) {
     const head = req.headers.authorization.slice(0, 6);
-    if (head !== 'Bearer') {
+    if (head !== 'Bearer') { // Check the token is Bearer token
         return res.status(400).send({
             success: false,
             message: 'This is not Bearer token'
@@ -112,17 +114,20 @@ function verifyToken(req, res, next) {
     }
     const token = req.headers.authorization.slice(7);
 
+    // If token is null, send error message
     if(!token) {
         return res.status(401).send({
             message: 'Access is denied, token is expired'
         });
     }
     try {
-        const decoded = jwt.verify(token, 'joseph');
+        // Decode the json web token
+        const decoded = jwt.verify(token, env.TOKEN_KEY);
         req.user = decoded;
         next();
     } catch (error) {
-        res.status(400).send({
+        // If error is occurred in decoding, send error message 
+        return res.status(400).send({
             message: 'Invalid token'
         });
     }

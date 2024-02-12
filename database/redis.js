@@ -1,21 +1,16 @@
 const redis = require('redis');
+const env = require('../const/env');
 
-// Redis database configration
+// Redis database configuration
 const client = redis.createClient({
-    port: 6379,
-    host: 'localhost',
+    port: env.REDIS_PORT,
+    host: env.REDIS_HOST,
 });
 client.on('error', (err) => {
     console.log('Redis client error:', err);
 });
 client.on('connect', () => {
-    console.log('Redis client connected');
+    console.log('Redis client connected');        
 });
-client.on('end', function() {
-    console.log('\nRedis client disconnected');
-    console.log('Server is going down now...');
-    process.exit();
-});
-client.connect();
 
 module.exports = client;
