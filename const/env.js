@@ -8,7 +8,7 @@ MYSQL_PASSWORD = '';
 REDIS_HOST = 'localhost';
 REDIS_PORT = 6379;
 
-TOKEN_KEY = 'joseph';
+JWT_SECRET = 'abcdef1234';
 
 module.exports = {
     BACKEND_PORT,
@@ -18,5 +18,5 @@ module.exports = {
     MYSQL_PASSWORD,
     REDIS_HOST,
     REDIS_PORT,
-    TOKEN_KEY
+    JWT_SECRET
 };

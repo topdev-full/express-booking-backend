@@ -93,7 +93,7 @@ router.post('/login', async (req, res) => {
         }
 
         // If valid email and password, send JWT token
-        const token = jwt.sign({ email: user.email }, env.TOKEN_KEY);
+        const token = jwt.sign({ email: user.email }, env.JWT_SECRET);
         res.json({
             token: 'Bearer ' + token
         });
@@ -122,7 +122,7 @@ function verifyToken(req, res, next) {
     }
     try {
         // Decode the json web token
-        const decoded = jwt.verify(token, env.TOKEN_KEY);
+        const decoded = jwt.verify(token, env.JWT_SECRET);
         req.user = decoded;
         next();
     } catch (error) {

@@ -17,6 +17,7 @@ This is a simple book search and bookmarking application where users can search 
 - Node.js
 - Express.js
 - MySQL
+- Redis
 - Google Books API
 - bcrypt for password hashing
 - jsonwebtoken for authentication
@@ -25,55 +26,63 @@ This is a simple book search and bookmarking application where users can search 
 ## Setup Instructions
 
 ### 1. Clone the repository:
-    ```
-    git clone <repository_url>
-    ```
+    
+    git clone https://github.com/topdev-full/express-booking-backend
+    
 ### 2. Install dependencies:
-    ```
+    
     npm install
-    ```
+    
 ### 3. Set up your MySQL database:
 
-- Create a database named `book_search_bookmark`.
+- Create a database named `googlebook_backend`.
 - Import the database schema from the `database_schema.sql` file.
 
-### 4. Configure environment variables:
+### 4. Set up your Redis database:
 
-- Create a `.env` file in the root directory.
+- Start the Redis server on port 6379.
+- You can change the port number in /const/env.js 
+
+### 5. Configure environment variables:
+
+- Modify a `env.js` file in the const directory.
 - Define the following environment variables:
 
-    ```
-    DB_HOST=your_mysql_host
-    DB_USER=your_mysql_user
-    DB_PASSWORD=your_mysql_password
-    DB_DATABASE=book_search_bookmark
-    JWT_SECRET=your_jwt_secret
-    ```
+   ```
+    BACKEND_PORT = <backend_port> (default: 3000)
+    MYSQL_HOST = <your_mysql_host>
+    MYSQL_USER = <your_mysql_user>
+    MYSQL_DB = <your_mysql_db_name>
+    MYSQL_PASSWORD = <your_mysql_password> (default: googlebook_backend)
+    REDIS_HOST = <your_redis_host>
+    REDIS_PORT = <your_redis_port> (default: 6379)
+    JWT_SECRET = <your_jwt_secret>
+   ```
 
-### 5. Start the application:
-    ```
+### 6. Start the application:
+    
     npm start
-    ```
+    
     
 ## API Endpoints
 
 1. **User Registration**
-   - `POST /register`: Register a new user with email and password.
+   - `POST /auth/register`: Register a new user with email and password.
 
 2. **User Login**
-   - `POST /login`: Login with registered email and password. Returns a JWT token.
+   - `POST /auth/login`: Login with registered email and password. Returns a JWT token.
 
 3. **Book Search**
-   - `GET /search?query=search_query`: Search for books by title, author, or keywords.
+   - public `GET /bookmark/search?query=search_query`: Search for books by title, author, or keywords.
 
 4. **Add Bookmark**
-   - `POST /bookmarks/add`: Add a book to the user's bookmark list.
+   - private `POST /bookmark/add`: Add a book to the user's bookmark list.
 
 5. **List Bookmarks**
-   - `GET /bookmarks`: List all bookmarks of the logged-in user.
+   - private `GET /bookmark/list`: List all bookmarks of the logged-in user.
 
 6. **Remove Bookmark**
-   - `DELETE /bookmarks/remove/:id`: Remove a book from the user's bookmark list by book ID.
+   - private `DELETE /bookmark/remove/:id`: Remove a book from the user's bookmark list by book ID.
 
 ## Contributors
 
